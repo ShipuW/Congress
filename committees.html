@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="myApp">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
+	<meta name="apple-touch-fullscreen" content="YES">  
+	<meta name="apple-mobile-web-app-capable" content="yes">
+
+	<title>Forecast</title> 
+	<link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<script src="js/jquery.min.js"></script>
+	<script src="js/angular.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+	<script src="js/dirPagination.js"></script>
+	<script src="js/moment.min.js"></script>
+	<link rel="stylesheet" href="css/hw8.css">
+	<link rel="stylesheet" href="css/font-awesome.min.css">
+
+	<script>
+		
+		var myApp = angular.module('myApp', ['angularUtils.directives.dirPagination']);
+
+		function MyController($scope,$http) {
+
+			$scope.cur_id = '';
+			$scope.currentPage = 1;
+			$scope.pageSize = 10;
+			$scope.houseItems = [];
+			$scope.senateItems = [];
+			$scope.jointItems = [];
+
+
+			$http.get("data.php?page=committees&chamber=house").then(function(response){
+				$scope.houseItems = response.data.results;
+			});
+			$http.get("data.php?page=committees&chamber=senate").then(function(response){
+				$scope.senateItems = response.data.results;
+			});
+			$http.get("data.php?page=committees&chamber=joint").then(function(response){
+				$scope.jointItems = response.data.results;
+			});
+
+			$scope.changeTab = function(){
+		  		$scope.currentPage = 1;
+				$scope.pageSize = 10;
+		  	}
+			
+			$scope.isLike = function(committee_id) {
+				var committeeArray = JSON.parse(localStorage.getItem("committees_array"));
+				if(committeeArray == null){
+					committeeArray = [];
+				}
+				if(committeeArray.indexOf(committee_id) == -1){
+					return false;
+				}else{
+					return true;
+				}	
+			};
+
+			$scope.clickFavoriteCommittee = function(committee_id) {
+				
+				if(typeof(Storage) !== "undefined") {
+					var committeeArray = JSON.parse(localStorage.getItem("committees_array"));
+					if(committeeArray == null){
+						committeeArray = [];
+					}
+					if(committeeArray.indexOf(committee_id) === -1){
+						committeeArray.push(committee_id);
+						localStorage.setItem("committees_array", JSON.stringify(committeeArray));
+					}else{
+						committeeArray.splice(legArray.indexOf(committee_id), 1); 
+						localStorage.setItem("legislators_array", JSON.stringify(committeeArray));
+					}
+					
+				}else{
+					alert("Sorry, your browser does not support web storage...");
+				}
+			}
+
+
+		}
+
+
+		myApp.controller('MyController', MyController);
+
+
+	</script>
+
+
+</head>
+<body>
+
+	<!-- navigation -->
+<div id="wrapper" ng-app="myApp" ng-controller="MyController">
+    <div id="header-wrapper" class="header-wrapper navbar navbar-default navbar-fixed-top" style="background-color: white;">
+            <a id="sidebar-toggle" href="#sidebar-toggle" style="color: black;"><span class="fa fa-bars fa-lg"></span></a>
+            <a id="header-brand" href="http://sunlightfoundation.com/" target="_blank" style="color: black;"><img src="http://cs-server.usc.edu:45678/hw/hw8/images/logo.png" style="height: 20px;"><b>Congress API</b></a>
+    </div>
+    <div id="sidebar-wrapper">
+        <ul class="sidebar-nav">
+			<li><a href="index.html"><span class="fa fa-user-o fa-lg"></span><span class="nav-title">Legislators</span></a></li>
+			<li><a href="bills.html"><span class="fa fa-file-o fa-lg"></span><span class="nav-title">Bills</span></a></li>
+			<li><a href="committees.html"><span class="fa fa-sign-in fa-lg"></span><span class="nav-title">Committees</span></a></li>
+			<li><a href="favorites.html"><span class="fa fa-star fa-lg"></span><span class="nav-title">Favorites</span></a></li>
+        </ul>
+    </div>
+
+	<!-- <div id="container"> -->
+	
+
+	<div id="page-content-wrapper">
+		<h1>Committees</h1>
+		<hr />
+		<div id="myCarousel" class="carousel slide" data-interval = "false">
+
+
+			<!-- Wrapper for slides -->
+			<div class="carousel-inner well well-lg" role="listbox" style="margin: 10px;">
+				<div class="item active">
+					<ul class="nav nav-tabs" role="tablist">
+						<li role="presentation" class="active"><a href="#House" aria-controls="house" role="tab" data-toggle="tab">House</a></li>
+						<li role="presentation"><a href="#Senate" aria-controls="senate" role="tab" data-toggle="tab">Senate</a></li>
+						<li role="presentation"><a href="#Joint" aria-controls="joint" role="tab" data-toggle="tab">Joint</a></li>
+					</ul>
+
+
+					<div class="tab-content well">
+						<div role="tabpanel" class="tab-pane fade in active" id="House">
+						
+							<div role="controlbar" id="control-bar">
+								<span>House</span>
+								<input ng-model="search" id="search-control" class="form-control" placeholder="Search">
+							</div>
+							<br>
+							<div class="my-controller">
+								<div id="table-display">
+									<table  class="table table-striped">
+										<thead>
+											<tr>
+												<th></th>
+												<th>Chamber</th>
+												<th>Committee ID</th>
+												<th>Name</th>
+												<th>Parent Committee</th>
+												<th>Contact</th>
+												<th>Office</th>
+											</tr>
+											<tr dir-paginate="item in houseItems | filter:search | orderBy: 'committee_id' | itemsPerPage: pageSize" current-page="currentPage" pagination-id = "House_Page" >
+												<td>
+													<button type='button' ng-click='clickFavoriteCommittee(item.committee_id)' class='btn btn-default pull-left'><img ng-if = "isLike(item.committee_id)==true" src="img/yellow-star.png" style="width: 20px;"><img ng-if = "isLike(item.committee_id)==false" src="img/white-star.png" style="width: 20px;"></button>
+												</td>
+												<td ng-if = "item.chamber=='house'"><img src="img/h.png" style="width: 30px;"> House</td>
+												<td ng-if = "item.chamber=='senate'"><img src="img/s.svg" style="width: 30px;"> Senate</td>
+												<td ng-if = "item.chamber=='joint'"><img src="img/s.svg" style="width: 30px;"> Joint</td>
+												<td>{{ item.committee_id }}</td>
+												<td>{{ item.name }}</td>
+												<td>{{ item.parent_committee_id }}</td>
+												<td>{{ item.phone }}</td>
+												<td ng-if = "item.office">{{ item.office }}</td><td ng-if = "!item.office">N.A</td>
+											</tr>
+										</thead>
+									</table>
+								</div>
+							</div>
+
+							<div class="other-controller">
+								<div class="text-center">
+								<dir-pagination-controls boundary-links="true" template-url="dirPagination.tpl.html" pagination-id = "House_Page"></dir-pagination-controls>
+								</div>
+							</div>
+						</div>
+
+
+						<div role="tabpanel" class="tab-pane fade" id="Senate">
+							<div role="controlbar" id="control-bar">
+								<span>Senate</span>
+								<input ng-model="search" id="search-control" class="form-control" placeholder="Search">
+							</div>
+							<br>
+							<div class="my-controller">
+								<div id="table-display">
+									<table  class="table table-striped">
+										<thead>
+											<tr>
+												<th></th>
+												<th>Chamber</th>
+												<th>Committee ID</th>
+												<th>Name</th>
+												<th>Parent Committee</th>
+											</tr>
+											<tr dir-paginate="item in senateItems | filter:search | orderBy: 'committee_id' | itemsPerPage: pageSize" current-page="currentPage" pagination-id = "Senate_Page">
+												<td>
+													<button type='button' ng-click='clickFavoriteCommittee(item.committee_id)' class='btn btn-default pull-left'><img ng-if = "isLike(item.committee_id)==true" src="img/yellow-star.png" style="width: 20px;"><img ng-if = "isLike(item.committee_id)==false" src="img/white-star.png" style="width: 20px;"></button>
+
+												</td>
+												<td ng-if = "item.chamber=='house'"><img src="img/h.png" style="width: 30px;"> House</td>
+												<td ng-if = "item.chamber=='senate'"><img src="img/s.svg" style="width: 30px;"> Senate</td>
+												<td ng-if = "item.chamber=='joint'"><img src="img/s.svg" style="width: 30px;"> Joint</td>
+												<td>{{ item.committee_id }}</td>
+												<td>{{ item.name }}</td>
+												<td>{{ item.parent_committee_id }}</td>
+											</tr>
+										</thead>
+									</table>
+								</div>
+							</div>
+
+							<div class="other-controller">
+								<div class="text-center">
+								<dir-pagination-controls boundary-links="true" template-url="dirPagination.tpl.html" pagination-id = Senate_Page"></dir-pagination-controls>
+								</div>
+							</div>
+						</div>
+
+						<div role="tabpanel" class="tab-pane fade" id="Joint">
+							<div role="controlbar" id="control-bar">
+								<span>Joint</span>
+								<input ng-model="search" id="search-control" class="form-control" placeholder="Search">
+							</div>
+							<br>
+							<div class="my-controller">
+								<div id="table-display">
+									<table  class="table table-striped">
+										<thead>
+											<tr>
+												<th></th>
+												<th>Chamber</th>
+												<th>Committee ID</th>
+												<th>Name</th>
+											</tr>
+											<tr dir-paginate="item in jointItems | filter:search | orderBy: 'committee_id' | itemsPerPage: pageSize" current-page="currentPage" pagination-id = "Joint_Page">
+												<td>
+													<button type='button' ng-click='clickFavoriteCommittee(item.committee_id)' class='btn btn-default pull-left'><img ng-if = "isLike(item.committee_id)==true" src="img/yellow-star.png" style="width: 20px;"><img ng-if = "isLike(item.committee_id)==false" src="img/white-star.png" style="width: 20px;"></button>
+
+												</td>
+												<td ng-if = "item.chamber=='house'"><img src="img/h.png" style="width: 30px;"> House</td>
+												<td ng-if = "item.chamber=='senate'"><img src="img/s.svg" style="width: 30px;"> Senate</td>
+												<td ng-if = "item.chamber=='joint'"><img src="img/s.svg" style="width: 30px;"> Joint</td>
+												<td>{{ item.committee_id }}</td>
+												<td>{{ item.name }}</td>
+											</tr>
+										</thead>
+									</table>
+								</div>
+							</div>
+
+							<div class="other-controller">
+								<div class="text-center">
+									<dir-pagination-controls boundary-links="true" template-url="dirPagination.tpl.html" pagination-id = "Joint_Page"></dir-pagination-controls>
+								</div>
+							</div>
+						</div>
+
+					</div>
+
+				</div>
+				
+			</div>
+
+			
+		</div>
+	</div>
+</div>
+	
+	
+<script>
+	$("#sidebar-toggle").click(function(e) {
+		e.preventDefault();
+		$("#wrapper").toggleClass("toggled");
+	});
+</script>
+
+
+<NOSCRIPT>
+</body>
+</html>
+
+
+

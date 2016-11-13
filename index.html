@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="myApp">
+<head>
+
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
+	<meta name="apple-touch-fullscreen" content="YES">  
+	<meta name="apple-mobile-web-app-capable" content="yes">  
+
+	<title>Forecast</title>
+	<link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<script src="js/jquery.min.js"></script>
+	<script src="js/angular.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+	<script src="js/dirPagination.js"></script>
+	<script src="js/moment.min.js"></script>
+	<link rel="stylesheet" href="css/hw8.css">
+	<link rel="stylesheet" href="css/font-awesome.min.css">
+
+
+	<script>
+
+		
+		var myApp = angular.module('myApp', ['angularUtils.directives.dirPagination']);
+		function MyController($scope,$http) {
+
+			$scope.cur_id = '';
+			$scope.currentPage = 1;
+			$scope.pageSize = 10;
+			$scope.items = [];
+			$scope.detail_info = '';
+			$scope.detail_committees = [];
+			$scope.detail_bills = [];
+
+			$scope.bill_info = '';
+
+
+			$http.get('data.php?page=legislators').then(function(response){
+				$scope.items = response.data.results;
+			});
+			// $.ajaxSettings.async = false;
+			// $.getJSON("https://congress.api.sunlightfoundation.com/legislators?apikey=f50631fa532e41608c78662065118da7&per_page=all",function(result){
+				
+			// 	$scope.items = result.results;
+
+			// });
+		  	$scope.changeTab = function(){
+		  		$scope.currentPage = 1;
+				$scope.pageSize = 10;
+		  	}
+
+			$scope.isLikeLegislator = function(bioguide_id) {
+				var legislatorArray = JSON.parse(localStorage.getItem("legislators_array"));
+				if(legislatorArray == null){
+					legislatorArray = [];
+				}
+				if(legislatorArray.indexOf(bioguide_id) == -1){
+					return false;
+				}else{
+					return true;
+				}	
+			};
+
+			$scope.isLikeBill = function(bill_id) {
+				var billArray = JSON.parse(localStorage.getItem("bills_array"));
+				if(billArray == null){
+					billArray = [];
+				}
+				if(billArray.indexOf(bill_id) == -1){
+					return false;
+				}else{
+					return true;
+				}	
+			};
+
+			$scope.tappedDetailButton = function(bioguide_id){
+
+				$scope.cur_id = bioguide_id;
+
+				// $.ajaxSettings.async = false;
+				$http.get('data.php?page=legislators&bioguide_id='+bioguide_id+'&content=detail').then(function(response){
+					// $scope.items = response.data.results;
+					$scope.detail_info = response.data.results[0];
+					// alert(moment($scope.detail_info.term_start, "YYYY-MM-DD").fromNow());
+					var start = moment($scope.detail_info.term_start, "YYYY-MM-DD");
+					var end = moment($scope.detail_info.term_end, "YYYY-MM-DD");
+					var now = moment();
+
+					$scope.detail_info.percent = Math.floor(Math.abs(now.diff(start)/end.diff(start)*100));
+					$scope.detail_info.term_start = start.format("MMM D, YYYY");
+					$scope.detail_info.term_end = end.format("MMM D, YYYY");
+					$scope.detail_info.birthday = moment($scope.detail_info.birthday, "YYYY-MM-DD").format("MMM D, YYYY");
+				});
+				// $.getJSON('https://congress.api.sunlightfoundation.com/legislators?bioguide_id='+ bioguide_id +'&apikey=f50631fa532e41608c78662065118da7&per_page=all',function(result){
+				// 	// $.each(result.results, function(key, val){
+				// 	// 	$scope.detail_info = val;
+				// 	// });
+				// 	$scope.detail_info = result.results[0];
+				// 	// alert(moment($scope.detail_info.term_start, "YYYY-MM-DD").fromNow());
+				// 	var start = moment($scope.detail_info.term_start, "YYYY-MM-DD");
+				// 	var end = moment($scope.detail_info.term_end, "YYYY-MM-DD");
+				// 	var now = moment();
+
+				// 	$scope.detail_info.percent = Math.floor(Math.abs(now.diff(start)/end.diff(start)*100));
+				// 	$scope.detail_info.term_start = start.format("MMM D, YYYY");
+				// 	$scope.detail_info.term_end = end.format("MMM D, YYYY");
+				// 	$scope.detail_info.birthday = moment($scope.detail_info.birthday, "YYYY-MM-DD").format("MMM D, YYYY");
+				// });
+				
+				// $.ajaxSettings.async = false;
+				$http.get('data.php?page=legislators&bioguide_id='+ bioguide_id +'&content=committees').then(function(response){
+					// $scope.items = response.data.results;
+					$scope.detail_committees = response.data.results;
+				});
+				// $.getJSON('https://congress.api.sunlightfoundation.com/committees?member_ids='+ bioguide_id +'&apikey=f50631fa532e41608c78662065118da7&per_page=5&page=1',function(result){
+				// 	$scope.detail_committees = result.results;
+				// 	// $.each(result.results, function(key, val){
+				// 	// 	$scope.detail_committees.push(val);
+				// 	// });
+				// });
+				// $.ajaxSettings.async = false;
+				$http.get('data.php?page=legislators&bioguide_id='+ bioguide_id +'&content=bills').then(function(response){
+					// $scope.items = response.data.results;
+					$scope.detail_bills = response.data.results;
+				});
+				// $.getJSON('https://congress.api.sunlightfoundation.com/bills?sponsor_id='+ bioguide_id +'&apikey=f50631fa532e41608c78662065118da7&per_page=5&page=1',function(result){
+				// 	$scope.detail_bills = result.results;
+				// 	// $.each(result.results, function(key, val){
+				// 	// 	$scope.detail_bills.push(val);
+				// 	// });
+				// });
+			}
+
+			$scope.tappedBillLinkButton = function(bill_id){
+				$http.get('data.php?page=legislators&bill_id='+bill_id).then(function(response){
+					$scope.bill_info = response.data.results[0];
+					$scope.bill_info.introduced_on = moment($scope.bill_info.introduced_on, "YYYY-MM-DD").format("MM-DD-YYYY");
+				});
+			}
+
+			
+			$scope.clickFavoriteLegislator = function(bioguide_id) {
+				if(typeof(Storage) !== "undefined") {
+					var legArray = JSON.parse(localStorage.getItem("legislators_array"));
+					if(legArray == null){
+						legArray = [];
+					}
+					if(legArray.indexOf(bioguide_id) === -1){
+						legArray.push(bioguide_id);
+						localStorage.setItem("legislators_array", JSON.stringify(legArray));
+					}else{
+						legArray.splice(legArray.indexOf(bioguide_id), 1); 
+						localStorage.setItem("legislators_array", JSON.stringify(legArray));
+					}
+					
+				}else{
+					alert("Sorry, your browser does not support web storage...");
+				}
+			}
+
+			$scope.clickFavoriteBill = function(bill_id) {
+				if(typeof(Storage) !== "undefined") {
+					var billArray = JSON.parse(localStorage.getItem("bills_array"));
+					if(billArray == null){
+						billArray = [];
+					}
+					if(billArray.indexOf(bill_id) === -1){
+						billArray.push(bill_id);
+						localStorage.setItem("bills_array", JSON.stringify(billArray));
+					}else{
+						billArray.splice(legArray.indexOf(bill_id), 1); 
+						localStorage.setItem("bills_array", JSON.stringify(billArray));
+					}
+					
+				}else{
+					alert("Sorry, your browser does not support web storage...");
+				}
+			}
+
+		}
+
+
+		myApp.controller('MyController', MyController);
+		myApp.directive('embedSrc', function () {
+			return {
+				restrict: 'A',
+				link: function (scope, element, attrs) {
+					var current = element;
+					scope.$watch(function() { return attrs.embedSrc; }, function () {
+						var clone = element
+							.clone()
+							.attr('src', attrs.embedSrc);
+						current.replaceWith(clone);
+						current = clone;
+					});
+				}
+			};
+		})
+
+	</script>
+
+
+</head>
+<body>
+
+<!-- navigation -->
+<div id="wrapper" ng-app="myApp" ng-controller="MyController">
+    <div id="header-wrapper" class="header-wrapper navbar navbar-default navbar-fixed-top" style="background-color: white;">
+            <a id="sidebar-toggle" href="#sidebar-toggle" style="color: black;"><span class="fa fa-bars fa-lg"></span></a>
+            <a id="header-brand" href="http://sunlightfoundation.com/" target="_blank" style="color: black;"><img src="http://cs-server.usc.edu:45678/hw/hw8/images/logo.png" style="height: 20px;"><b>Congress API</b></a>
+    </div>
+    <div id="sidebar-wrapper">
+        <ul class="sidebar-nav">
+        	<!-- <i class="fa fa-camera-retro fa-lg"></i> -->
+			<li><a href="index.html"><span class="fa fa-user-o fa-lg"></span><span class="nav-title">Legislators</span></a></li>
+			<li><a href="bills.html"><span class="fa fa-file-o fa-lg"></span><span class="nav-title">Bills</span></a></li>
+			<li><a href="committees.html"><span class="fa fa-sign-in fa-lg"></span><span class="nav-title">Committees</span></a></li>
+			<li><a href="favorites.html"><span class="fa fa-star fa-lg"></span><span class="nav-title">Favorites</span></a></li>
+        </ul>
+    </div>
+
+	<!-- <div id="container"> -->
+	
+
+	<div id="page-content-wrapper" >
+
+		<h1>Legislators</h1>
+		<hr />
+		<div  id="myCarousel" class="carousel slide" data-interval = "false">
+
+
+			<!-- Wrapper for slides -->
+			<div class="carousel-inner well well-lg" role="listbox">
+				<div class="item active">
+					<ul class="nav nav-tabs" role="tablist">
+						<li role="presentation" class="active"><a href="#State" aria-controls="state" role="tab" data-toggle="tab" ng-click="changeTab()">By State</a></li>
+						<li role="presentation"><a href="#House" aria-controls="house" role="tab" data-toggle="tab" ng-click="changeTab()">House</a></li>
+						<li role="presentation"><a href="#Senate" aria-controls="senate" role="tab" data-toggle="tab" ng-click="changeTab()">Senate</a></li>
+					</ul>
+
+
+					<div class="tab-content well">
+						
+
+						<div role="tabpanel" class="tab-pane fade in active" id="State">
+							<div role="controlbar" id="control-bar">
+								<span>Lesgislator By State</span>
+								<select class="form-control" ng-model="select_search" id="search-control">
+									<option value="">All States</option>
+									<option value="Alabama">Alabama</option>
+									<option value="Alaska">Alaska</option>
+									<option value="Arizona">Arizona</option>
+									<option value="Arkansas">Arkansas</option>
+									<option value="California">California</option>
+									<option value="Colorado">Colorado</option>
+									<option value="Connecticut">Connecticut</option>
+									<option value="Delaware">Delaware</option>
+									<option value="District Of Columbia">District Of Columbia</option>
+									<option value="Florida">Florida</option>
+									<option value="Georgia">Georgia</option>
+									<option value="Hawaii">Hawaii</option>
+									<option value="Idaho">Idaho</option>
+									<option value="Illinois">Illinois</option>
+									<option value="Indiana">Indiana</option>
+									<option value="Iowa">Iowa</option>
+									<option value="Kansas">Kansas</option>
+									<option value="Kentucky">Kentucky</option>
+									<option value="Louisiana">Louisiana</option>
+									<option value="Maine">Maine</option>
+									<option value="Maryland">Maryland</option>
+									<option value="Massachusetts">Massachusetts</option>
+									<option value="Michigan">Michigan</option>
+									<option value="Minnesota">Minnesota</option>
+									<option value="Mississippi">Mississippi</option>
+									<option value="Missouri">Missouri</option>
+									<option value="Montana">Montana</option>
+									<option value="Nebraska">Nebraska</option>
+									<option value="Nevada">Nevada</option>
+									<option value="New Hampshire">New Hampshire</option>
+									<option value="New Jersey">New Jersey</option>
+									<option value="New Mexico">New Mexico</option>
+									<option value="New Yor">New York</option>
+									<option value="North Carolina">North Carolina</option>
+									<option value="North Dakota">North Dakota</option>
+									<option value="Ohio">Ohio</option>
+									<option value="Oklahoma">Oklahoma</option>
+									<option value="Oregon">Oregon</option>
+									<option value="Pennsylvania">Pennsylvania</option>
+									<option value="Rhode Island">Rhode Island</option>
+									<option value="South Carolina">South Carolina</option>
+									<option value="South Dakota">South Dakota</option>
+									<option value="Tennessee">Tennessee</option>
+									<option value="Texas">Texas</option>
+									<option value="Utah">Utah</option>
+									<option value="Vermont">Vermont</option>
+									<option value="Virginia">Virginia</option>
+									<option value="Washington">Washington</option>
+									<option value="West Virginia">West Virginia</option>
+									<option value="Wisconsin">Wisconsin</option>
+									<option value="Wyoming">Wyoming</option>
+								</select>
+							</div>
+							<div class="my-controller">
+								<div id="table-display">
+									<table  class="table table-striped" >
+										<thead>
+											<tr>
+												<th>Party</th>
+												<th>Name</th>
+												<th>Chamber</th>
+												<th>District</th>
+												<th>State</th>
+												<th></th>
+											</tr>
+											<tr dir-paginate="item in items | filter:{state_name:select_search} | orderBy:'last_name' | orderBy:'state_name' | itemsPerPage: pageSize" current-page="currentPage" pagination-id = "State_Page" >
+												<td><img ng-if="item.party=='R'" src="img/r.png" style="width: 30px;"><img ng-if="item.party=='D'" src="img/d.png" style="width: 30px;"></td>
+												<td>{{ item.last_name }}, {{ item.first_name }}</td>
+												<td ng-if = "item.chamber=='house'"><img src="img/h.png" style="width: 30px;"> House</td>
+												<td ng-if = "item.chamber=='senate'"><img src="img/s.svg" style="width: 30px;"> Senate</td>
+												<td ng-if = "item.chamber=='joint'"><img src="img/s.svg" style="width: 30px;"> Joint</td>							
+												<td ng-if = "item.district">District {{ item.district }}</td><td ng-if = "!item.district">N.A</td>
+												<td>{{ item.state_name }}</td>
+												<td>
+													<button type="button" href="#myCarousel" class="btn btn-primary" data-slide="next" ng-click = "tappedDetailButton(item.bioguide_id)">View Details</button>
+													<!-- <a class="right carousel-control" href="#myCarousel" role="button" data-slide="next">
+														<span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+														<span class="sr-only">Next</span>
+													</a> -->
+												</td>
+											</tr>
+										</thead>
+									</table>
+								</div>
+							</div>
+
+							<div class="other-controller">
+								<div class="text-center">
+								<dir-pagination-controls boundary-links="true" template-url="dirPagination.tpl.html" pagination-id = "State_Page"></dir-pagination-controls>
+								</div>
+							</div>
+						</div>
+
+
+						<div role="tabpanel" class="tab-pane fade" id="House">
+							<div role="controlbar" id="control-bar">
+								<span>Lesgislator By House</span>
+								<input ng-model="search" id="search-control" class="form-control" placeholder="Search">
+							</div>
+							<!-- <div class="col-xs-4">
+								<input ng-model="search" id="search" class="form-control" placeholder="Search">
+							</div> -->
+							<br>
+							<div class="my-controller">
+								<div id="table-display">
+									<table  class="table table-striped">
+										<thead>
+											<tr>
+												<th>Party</th>
+												<th>Name</th>
+												<th>Chamber</th>
+												<th>District</th>
+												<th>State</th>
+												<th></th>
+											</tr>
+											<tr dir-paginate="item in items | filter:{chamber:'house'} | filter:search | orderBy:'last_name' | itemsPerPage: pageSize" current-page="currentPage" pagination-id = "House_Page">
+												<td><img ng-if="item.party=='R'" src="img/r.png" style="width: 30px;"><img ng-if="item.party=='D'" src="img/d.png" style="width: 30px;"></td>
+												<td>{{ item.last_name }}, {{ item.first_name }}</td>
+												<td ng-if = "item.chamber=='house'"><img src="img/h.png" style="width: 30px;"> House</td>
+												<td ng-if = "item.chamber=='senate'"><img src="img/s.svg" style="width: 30px;"> Senate</td>
+												<td ng-if = "item.district">District {{ item.district }}</td><td ng-if = "!item.district">N.A</td>
+												<td>{{ item.state_name }}</td>
+												<td>
+													<button type="button" href="#myCarousel" class="btn btn-primary" data-slide="next" ng-click = "tappedDetailButton(item.bioguide_id)">View Details</button>
+												</td>
+											</tr>
+										</thead>
+									</table>
+								</div>
+							</div>
+
+							<div class="other-controller">
+								<div class="text-center">
+								<dir-pagination-controls boundary-links="true" template-url="dirPagination.tpl.html" pagination-id = "House_Page"></dir-pagination-controls>
+								</div>
+							</div>
+						</div>
+
+						<div role="tabpanel" class="tab-pane fade" id="Senate">
+							<div role="controlbar" id="control-bar">
+								<span>Lesgislator By Senate</span>
+								<input ng-model="search" id="search-control" class="form-control" placeholder="Search">
+							</div>
+							<br>
+							<div class="my-controller">
+								<div id="table-display">
+									<table  class="table table-striped">
+										<thead>
+											<tr>
+												<th>Party</th>
+												<th>Name</th>
+												<th>Chamber</th>
+												<th>State</th>
+												<th></th>
+											</tr>
+											<tr dir-paginate="item in items | filter:{chamber:'senate'} | filter:search | orderBy:'last_name' | itemsPerPage: pageSize" current-page="currentPage" pagination-id = "Senate_Page">
+												<td><img ng-if="item.party=='R'" src="img/r.png" style="width: 30px;"><img ng-if="item.party=='D'" src="img/d.png" style="width: 30px;"></td>
+												<td>{{ item.last_name }}, {{ item.first_name }}</td>
+												<td ng-if = "item.chamber=='house'"><img src="img/h.png" style="width: 30px;"> House</td>
+												<td ng-if = "item.chamber=='senate'"><img src="img/s.svg" style="width: 30px;"> Senate</td>
+												<td>{{ item.state_name }}</td>
+												<td>
+													<button type="button" href="#myCarousel" class="btn btn-primary" data-slide="next" ng-click = "tappedDetailButton(item.bioguide_id)">View Details</button>
+												</td>
+											</tr>
+										</thead>
+									</table>
+								</div>
+
+							</div>
+
+							<div class="other-controller">
+								<div class="text-center">
+									<dir-pagination-controls boundary-links="true" template-url="dirPagination.tpl.html" pagination-id = "Senate_Page"></dir-pagination-controls>
+								</div>
+							</div>
+						</div>
+
+					</div>
+
+				</div>
+				
+				<div class="item">	
+					<div id="item_header">
+						<button type='button' href='#myCarousel' class='btn btn-default fa fa-chevron-left fa-lg' data-slide='prev' style="height: 35px;"></button>Details
+						<button type='button' ng-click='clickFavoriteLegislator(detail_info.bioguide_id)' class='btn btn-default pull-right'><img ng-if = "isLikeLegislator(detail_info.bioguide_id)==true" src="img/yellow-star.png" style="width: 20px;"><img ng-if = "isLikeLegislator(detail_info.bioguide_id)==false" src="img/white-star.png" style="width: 20px;"></button>
+					</div>
+					<hr id="item_hr"></hr>
+
+					<span id="detail_left">
+						<hr />
+						<span id="image_span">
+							<img id = "detail_left_img" ng-src="https://theunitedstates.io/images/congress/225x275/{{detail_info.bioguide_id}}.jpg">
+						</span>
+						<table id = "basic_info_table">
+							<tr><td>
+							<hr />
+							{{detail_info.title}}, {{detail_info.last_name}}, {{detail_info.first_name}}
+							</td></tr>
+							<tr><td>
+							<hr />
+							<a href="mailto:{{detail_info.oc_email}}">{{detail_info.oc_email}}</a>
+							</td></tr>
+							<tr><td>
+							<hr />
+							Chamber: {{detail_info.chamber}}
+							</td></tr>
+							<tr><td>
+							<hr />
+							Contact: <a href="tel:{{detail_info.phone}}">{{detail_info.phone}}</a>
+							</td></tr>
+							<tr><td>
+							<hr />
+							<img ng-if="detail_info.party=='R'" src="img/r.png" style="width: 30px;"> Republican <img ng-if="detail_info.party=='D'" src="img/d.png" style="width: 30px;"> Democrat
+							</td></tr>
+						</table>
+						
+						<br>
+						<span id="table-display">
+							<table id="detail_left_table">
+								<thread>
+									<tr><th class="hidden-element">Start Term</th><td>{{detail_info.term_start}}</td></tr>
+									<tr><th class="hidden-element">End Term</th><td>{{detail_info.term_end}}</td></tr>
+									<tr class="hidden-element"><th>Term</th><td>
+										<div class="progress">
+											<div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: {{detail_info.percent}}%;">
+												<span>{{detail_info.percent}}%</span>
+											</div>
+										</div>
+									</td></tr>
+									<tr ng-if="detail_info.office"><th class="hidden-element">Office</th><td>{{detail_info.office}}</td></tr>
+									<tr ng-if="detail_info.state_name"><th class="hidden-element">State</th><td>{{detail_info.state_name}}</td></tr>
+									<tr ng-if="detail_info.fax" ><th class="hidden-element">Fax</th><td><a href="fax:{{detail_info.fax}}">{{detail_info.fax}}</a></td></tr>
+									<tr ng-if="detail_info.birthday"><th class="hidden-element">Birthday</th><td>{{detail_info.birthday}}</td></tr>
+									<tr><th class="hidden-element">Social Links</th><td>
+										<a target="_blank" ng-if="detail_info.twitter_id" href="https://twitter.com/{{detail_info.twitter_id}}"><img src="img/t.png" style="width: 30px;"></a>
+										<a target="_blank" ng-if="detail_info.facebook_id" href="https://www.facebook.com/{{detail_info.facebook_id}}"><img src="img/f.png" style="width: 30px;"></a>
+										<a target="_blank" ng-if="detail_info.website" href="{{detail_info.website}}"><img src="img/w.png" style="width: 30px;"></a>
+									</td></tr>
+								</thread>
+							</table>
+						</span>
+					</span>
+					<span id="detail_right">
+						<span class="table_title">Committees</span>
+						<div id="table-display">
+							<table id="detail_right_table" class="table table-striped">
+								<thead>
+									<tr>
+										<th>Chamber</th>
+										<th>Committees ID</th>
+										<th class="hidden-element">Name</th>
+									</tr>
+									<tr ng-repeat='committee in detail_committees'>
+										<td>{{ committee.chamber }}</td>
+										<td>{{ committee.committee_id }}</td>
+										<td class="hidden-element">{{ committee.name }}</td>
+									</tr>
+								</thead>
+							</table>
+						</div>
+
+						<span class="table_title">Bills</span>
+						<div id="table-display">
+							<table id="detail_right_table" class="table table-striped">
+								<thead>
+									<tr>
+										<th>Bill ID</th>
+										<th class="hidden-element">Title</th>
+										<th class="hidden-element">Chamber</th>
+										<th class="hidden-element">Bill Type</th>
+										<th class="hidden-element">Congress</th>
+										<th>Link</th>
+									</tr>
+									<tr ng-repeat='bill in detail_bills'>
+										<td>{{ bill.bill_id }}</td>
+										<td class="hidden-element">{{ bill.official_title }}</td>
+										<td class="hidden-element">{{ bill.chamber }}</td>
+										<td class="hidden-element">{{ bill.bill_type }}</td>
+										<td class="hidden-element">{{ bill.congress }}</td>
+										<!-- href="{{ bill.last_version.urls.pdf }} -->
+										<td><a href="#myCarousel" data-slide="next" ng-click = "tappedBillLinkButton(bill.bill_id)"">Link</a></td>
+									</tr>
+								</thead>
+							</table>
+						</div>
+					</span>
+
+				</div>
+
+
+				<div class="item">
+					<div id="item_header">
+						<button type='button' href='#myCarousel' class='btn btn-default fa fa-chevron-left fa-lg' data-slide='prev' style="height: 35px;"></button>Details
+						<button type='button' ng-click='clickFavoriteBill(bill_info.bill_id)' class='btn btn-default pull-right'><img ng-if = "isLikeBill(bill_info.bill_id)==true" src="img/yellow-star.png" style="width: 20px;"><img ng-if = "isLikeBill(bill_info.bill_id)==false" src="img/white-star.png" style="width: 20px;"></button>
+					</div>
+					<hr id="item_hr"></hr>
+					<span id="detail_left">
+						<div id="table-display">
+							<table id="detail_left_table">
+								<tr><td>Bill ID</td><td>{{ bill_info.bill_id }}</td></tr>
+								<tr><td>Title</td><td>{{ bill_info.official_title }}</td></tr>
+								<tr><td>Bill Type</td><td>{{ bill_info.bill_type }}</td></tr>
+								<tr><td>Sponsor</td><td>{{bill_info.sponsor.title}}, {{bill_info.sponsor.last_name}}, {{bill_info.sponsor.first_name}}</td></tr>
+								<tr><td>Chamber</td><td ng-if = "bill_info.chamber=='house'">House</td>
+												<td ng-if = "bill_info.chamber=='senate'">Senate</td></tr>
+								<tr><td>Status</td><td ng-if="bill_info.history.active==true">Active</td><td ng-if="bill_info.history.active==false">New</td></tr>
+								<tr><td>Introduced On</td><td>{{ bill_info.introduced_on }}</td></tr>
+								<tr><td>Congress URL</td><td><a ng-if="bill_info.urls.congress" target="_blank" href="{{ bill_info.urls.congress }}">Link</a></td></tr>
+								<tr><td>Version Status</td><td>{{ bill_info.last_version.version_name }}</td></tr>
+								<tr><td>Bill URL</td><td><a ng-if="bill_info.urls.congress" target="_blank" href="{{ bill_info.last_version.urls.pdf }}">Link</a></td></tr>
+							</table>
+						</div>
+					</span>
+					<span id="detail_right">
+						<embed embed-src="{{bill_info.last_version.urls.pdf}}" src="{{bill_info.last_version.urls.pdf}}" width="100%" height="500" alt="pdf" pluginspage="http://www.adobe.com/products/acrobat/readstep2.html">
+					</span>
+				</div>
+
+			
+		</div>
+	</div>
+</div>
+	
+	
+
+<script>
+	$("#sidebar-toggle").click(function(e) {
+		e.preventDefault();
+		$("#wrapper").toggleClass("toggled");
+	});
+</script>
+
+
+<NOSCRIPT>
+</body>
+</html>
+
+
+

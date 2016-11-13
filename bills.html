@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="myApp">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
+	<meta name="apple-touch-fullscreen" content="YES">  
+	<meta name="apple-mobile-web-app-capable" content="yes"> 
+
+	<title>Forecast</title>
+	<link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<script src="js/jquery.min.js"></script>
+	<script src="js/angular.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+	<script src="js/dirPagination.js"></script>
+	<script src="js/moment.min.js"></script>
+	<link rel="stylesheet" href="css/hw8.css">
+	<link rel="stylesheet" href="css/font-awesome.min.css">
+
+	<script>
+		
+		var myApp = angular.module('myApp', ['angularUtils.directives.dirPagination']);
+
+		function MyController($scope,$http) {
+
+			$scope.cur_id = '';
+			$scope.currentPage = 1;
+			$scope.pageSize = 10;
+			$scope.activeItems = [];
+			$scope.newItems = [];
+			$scope.bill_info = '';
+
+			$http.get("data.php?page=bills&active=true").then(function(response){
+				$scope.activeItems = response.data.results;
+			});
+			$http.get("data.php?page=bills&active=false").then(function(response){
+				$scope.newItems = response.data.results;
+			});
+
+		  	$scope.changeTab = function(){
+		  		$scope.currentPage = 1;
+				$scope.pageSize = 10;
+		  	}
+
+		  	$scope.isLike = function(bill_id) {
+
+				var billArray = JSON.parse(localStorage.getItem("bills_array"));
+				if(billArray == null){
+					billArray = [];
+				}
+				if(billArray.indexOf(bill_id) == -1){
+					return false;
+				}else{
+					return true;
+				}	
+			};
+
+			$scope.tappedDetailButton = function(bill_id){
+				$http.get('data.php?page=bills&bill_id='+bill_id).then(function(response){
+					$scope.bill_info = response.data.results[0];
+					$scope.bill_info.introduced_on = moment($scope.bill_info.introduced_on, "YYYY-MM-DD").format("MM-DD-YYYY");
+				});
+			}
+
+			$scope.clickFavoriteBill = function(bill_id) {
+				
+				if(typeof(Storage) !== "undefined") {
+					var billArray = JSON.parse(localStorage.getItem("bills_array"));
+					if(billArray == null){
+						billArray = [];
+					}
+					if(billArray.indexOf(bill_id) === -1){
+						billArray.push(bill_id);
+						localStorage.setItem("bills_array", JSON.stringify(billArray));
+					}else{
+						billArray.splice(legArray.indexOf(bill_id), 1); 
+						localStorage.setItem("bills_array", JSON.stringify(billArray));
+					}
+					
+				}else{
+					alert("Sorry, your browser does not support web storage...");
+				}
+			}
+
+		}
+
+
+		myApp.controller('MyController', MyController);
+		myApp.directive('embedSrc', function () {
+			return {
+				restrict: 'A',
+				link: function (scope, element, attrs) {
+					var current = element;
+					scope.$watch(function() { return attrs.embedSrc; }, function () {
+						var clone = element
+							.clone()
+							.attr('src', attrs.embedSrc);
+						current.replaceWith(clone);
+						current = clone;
+					});
+				}
+			};
+		})
+
+	</script>
+
+
+</head>
+<body>
+
+	<!-- navigation -->
+<div id="wrapper" ng-app="myApp" ng-controller="MyController">
+    <div id="header-wrapper" class="header-wrapper navbar navbar-default navbar-fixed-top" style="background-color: white;">
+            <a id="sidebar-toggle" href="#sidebar-toggle" style="color: black;"><span class="fa fa-bars fa-lg"></span></a>
+            <a id="header-brand" href="http://sunlightfoundation.com/" target="_blank" style="color: black;"><img src="http://cs-server.usc.edu:45678/hw/hw8/images/logo.png" style="height: 20px;"><b>Congress API</b></a>
+    </div>
+    <div id="sidebar-wrapper">
+        <ul class="sidebar-nav">
+            <li><a href="index.html"><span class="fa fa-user-o fa-lg"></span><span class="nav-title">Legislators</span></a></li>
+			<li><a href="bills.html"><span class="fa fa-file-o fa-lg"></span><span class="nav-title">Bills</span></a></li>
+			<li><a href="committees.html"><span class="fa fa-sign-in fa-lg"></span><span class="nav-title">Committees</span></a></li>
+			<li><a href="favorites.html"><span class="fa fa-star fa-lg"></span><span class="nav-title">Favorites</span></a></li>
+        </ul>
+    </div>
+
+	<!-- <div id="container"> -->
+	
+
+	<div id="page-content-wrapper">
+		<h1>Bills</h1>
+		<hr />
+		<div id="myCarousel" class="carousel slide" data-interval = "false">
+
+
+			<!-- Wrapper for slides -->
+			<div class="carousel-inner well well-lg" role="listbox" style="margin: 10px;">
+				<div class="item active">
+					<ul class="nav nav-tabs" role="tablist">
+						<li role="presentation" class="active"><a href="#Active" aria-controls="active" role="tab" data-toggle="tab">Active Bills</a></li>
+						<li role="presentation"><a href="#New" aria-controls="new" role="tab" data-toggle="tab">New Bills</a></li>
+					</ul>
+
+
+					<div class="tab-content well">
+						<div role="tabpanel" class="tab-pane fade in active" id="Active">
+							<div role="controlbar" id="control-bar">
+								<span>Active Bills</span>
+								<input ng-model="search" id="search-control" class="form-control" placeholder="Search">
+							</div>
+							<br>
+							<div class="my-controller">
+								<div id="table-display">
+									<table  class="table table-striped">
+										<thead>
+											<tr>
+												<th>Bill ID</th>
+												<th>Bill Type</th>
+												<th>Title</th>
+												<th>Chamber</th>
+												<th>Introduced On</th>
+												<th>Sponsor</th>
+												<th></th>
+											</tr>
+											<tr dir-paginate="item in activeItems | filter:search | orderBy: 'introduced_on':true | itemsPerPage: pageSize" current-page="currentPage" pagination-id = "Active_Page" >
+												<td>{{ item.bill_id }}</td>
+												<td>{{ item.bill_type }}</td>
+												<td>{{ item.official_title }}</td>
+												<td ng-if = "item.chamber=='house'"><img src="img/h.png" style="width: 30px;"> House</td>
+												<td ng-if = "item.chamber=='senate'"><img src="img/s.svg" style="width: 30px;"> Senate</td>
+												<td>{{ item.introduced_on }}</td>
+												<td>{{item.sponsor.title}}, {{item.sponsor.last_name}}, {{item.sponsor.first_name}}</td>
+												<td>
+													<button type="button" href="#myCarousel" class="btn btn-primary" data-slide="next" ng-click = "tappedDetailButton(item.bill_id)">View Details</button>
+												</td>
+											</tr>
+										</thead>
+									</table>
+								</div>
+							</div>
+
+							<div class="other-controller">
+								<div class="text-center">
+								<dir-pagination-controls boundary-links="true" template-url="dirPagination.tpl.html" pagination-id = "Active_Page"></dir-pagination-controls>
+								</div>
+							</div>
+						</div>
+
+
+						<div role="tabpanel" class="tab-pane fade" id="New">
+							<div role="controlbar" id="control-bar">
+								<span>New Bills</span>
+								<input ng-model="search" id="search-control" class="form-control" placeholder="Search">
+							</div>
+							<br>
+							<div class="my-controller">
+								<div id="table-display">
+									<table  class="table table-striped">
+										<thead>
+											<tr>
+												<th>Bill ID</th>
+												<th>Bill Type</th>
+												<th>Title</th>
+												<th>Chamber</th>
+												<th>Introduced On</th>
+												<th>Sponsor</th>
+												<th></th>
+											</tr>
+											<tr dir-paginate="item in newItems | filter:search | orderBy: 'introduced_on':true | itemsPerPage: pageSize" current-page="currentPage" pagination-id = "New_Page">
+												<td>{{ item.bill_id }}</td>
+												<td>{{ item.bill_type }}</td>
+												<td>{{ item.official_title }}</td>
+												<td ng-if = "item.chamber=='house'"><img src="img/h.png" style="width: 30px;"> House</td>
+												<td ng-if = "item.chamber=='senate'"><img src="img/s.svg" style="width: 30px;"> Senate</td>
+												<td>{{ item.introduced_on }}</td>
+												<td>{{item.sponsor.title}}, {{item.sponsor.last_name}}, {{item.sponsor.first_name}}</td>
+												<td>
+													<button type="button" href="#myCarousel" class="btn btn-primary" data-slide="next" ng-click = "tappedDetailButton(item.bill_id)">View Details</button>
+												</td>
+											</tr>
+										</thead>
+									</table>
+								</div>
+							</div>
+
+							<div class="other-controller">
+								<div class="text-center">
+								<dir-pagination-controls boundary-links="true" template-url="dirPagination.tpl.html" pagination-id = "New_Page"></dir-pagination-controls>
+								</div>
+							</div>
+						</div>
+
+					</div>
+
+				</div>
+				
+				<div class="item">
+					<div id="item_header">
+						<button type='button' href='#myCarousel' class='btn btn-default fa fa-chevron-left fa-lg' data-slide='prev' style="height: 35px;"></button>Details
+						<button type='button' ng-click='clickFavoriteBill(bill_info.bill_id)' class='btn btn-default pull-right'><img ng-if = "isLike(bill_info.bill_id)==true" src="img/yellow-star.png" style="width: 20px;"><img ng-if = "isLike(bill_info.bill_id)==false" src="img/white-star.png" style="width: 20px;"></button>
+					</div>
+					<hr id="item_hr"></hr>
+					<span id="detail_left">
+						<div id="table-display">
+							<table id="detail_left_table">
+								<tr><td>Bill ID</td><td>{{ bill_info.bill_id }}</td></tr>
+								<tr><td>Title</td><td>{{ bill_info.official_title }}</td></tr>
+								<tr><td>Bill Type</td><td>{{ bill_info.bill_type }}</td></tr>
+								<tr><td>Sponsor</td><td>{{bill_info.sponsor.title}}, {{bill_info.sponsor.last_name}}, {{bill_info.sponsor.first_name}}</td></tr>
+								<tr><td>Chamber</td><td ng-if = "bill_info.chamber=='house'">House</td>
+												<td ng-if = "bill_info.chamber=='senate'">Senate</td></tr>
+								<tr><td>Status</td><td ng-if="bill_info.history.active==true">Active</td><td ng-if="bill_info.history.active==false">New</td></tr>
+								<tr><td>Introduced On</td><td>{{ bill_info.introduced_on }}</td></tr>
+								<tr><td>Congress URL</td><td><a ng-if="bill_info.urls.congress" target="_blank" href="{{ bill_info.urls.congress }}">Link</a></td></tr>
+								<tr><td>Version Status</td><td>{{ bill_info.last_version.version_name }}</td></tr>
+								<tr><td>Bill URL</td><td><a ng-if="bill_info.urls.congress" target="_blank" href="{{ bill_info.last_version.urls.pdf }}">Link</a></td></tr>
+							</table>
+						</div>
+					</span>
+					<span id="detail_right">
+						<embed embed-src="{{bill_info.last_version.urls.pdf}}" src="{{bill_info.last_version.urls.pdf}}" width="100%" height="500" alt="pdf" pluginspage="http://www.adobe.com/products/acrobat/readstep2.html">
+					</span>
+				</div>
+			</div>
+
+			
+		</div>
+	</div>
+</div>
+	
+
+<script>
+	$("#sidebar-toggle").click(function(e) {
+		e.preventDefault();
+		$("#wrapper").toggleClass("toggled");
+	});
+</script>
+
+
+<NOSCRIPT>
+</body>
+</html>
+
+
+
